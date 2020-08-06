@@ -7,8 +7,17 @@ from . models import *
 
 
 def store(request):
+    if request.user.is_authenticated:
+        customer = request.user.customer
+        order, created = Order.objects.get_or_create(customer=customer, complete=False)
+        items = order.orderitem_set.all()
+        item_count = order.get_cart_items
+    else:
+        items = []
+        order = {'get_cart_total': 0, 'get_cart_items': 0, 'shipping': False}
+        item_count = order['get_cart_items']
     products = Product.objects.all()
-    context = {'products': products}
+    context = {'products': products, 'itemCount': item_count}
     return render(request, 'store/store.html', context)
 
 
@@ -17,10 +26,12 @@ def cart(request):
         customer = request.user.customer
         order, created = Order.objects.get_or_create(customer=customer, complete=False)
         items = order.orderitem_set.all()
+        item_count = order.get_cart_items
     else:
         items = []
         order = {'get_cart_total': 0, 'get_cart_items': 0, 'shipping': False}
-    context = {'items': items, 'order': order}
+        item_count = order['get_cart_items']
+    context = {'items': items, 'order': order, 'itemCount': item_count}
     return render(request, 'store/cart.html', context)
 
 
@@ -29,10 +40,12 @@ def checkout(request):
         customer = request.user.customer
         order, created = Order.objects.get_or_create(customer=customer, complete=False)
         items = order.orderitem_set.all()
+        item_count = order.get_cart_items
     else:
         items = []
         order = {'get_cart_total': 0, 'get_cart_items': 0, 'shipping': False}
-    context = {'items': items, 'order': order}
+        item_count = order['get_cart_items']
+    context = {'items': items, 'order': order, 'itemCount': item_count}
     return render(request, 'store/checkout.html', context)
 
 
