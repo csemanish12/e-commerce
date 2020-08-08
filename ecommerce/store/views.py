@@ -4,14 +4,14 @@ import json
 from django.shortcuts import render
 from django.http import JsonResponse
 from . models import *
-from .utils import cookie_cart, cart_data, guest_order
+from .utils import get_cookie_cart, get_cart_data, get_guest_order
 
 
 # Create your views here.
 
 
 def store(request):
-    data = cart_data(request)
+    data = get_cart_data(request)
     item_count = data['item_count']
     products = Product.objects.all()
     context = {'products': products, 'itemCount': item_count}
@@ -19,7 +19,7 @@ def store(request):
 
 
 def cart(request):
-    data = cart_data(request)
+    data = get_cart_data(request)
     items = data['items']
     order = data['order']
     item_count = data['item_count']
@@ -29,7 +29,7 @@ def cart(request):
 
 
 def checkout(request):
-    data = cart_data(request)
+    data = get_cart_data(request)
     items = data['items']
     order = data['order']
     item_count = data['item_count']
@@ -68,7 +68,7 @@ def process_order(request):
         order, created = Order.objects.get_or_create(customer=customer, complete=False)
 
     else:
-        order, customer = guest_order(request, data)
+        order, customer = get_guest_order(request, data)
     total = float(data['form']['total'])
     order.transaction_id = transaction_id
     if total == order.get_cart_total:

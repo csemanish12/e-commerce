@@ -1,8 +1,8 @@
 import json
-from .models import  *
+from .models import *
 
 
-def cookie_cart(request):
+def get_cookie_cart(request):
     try:
         cart = json.loads(request.COOKIES.get('cart', {}))
     except:
@@ -39,14 +39,14 @@ def cookie_cart(request):
     return {'itemCount': item_count, 'order': order, 'items': items}
 
 
-def cart_data(request):
+def get_cart_data(request):
     if request.user.is_authenticated:
         customer = request.user.customer
         order, created = Order.objects.get_or_create(customer=customer, complete=False)
         items = order.orderitem_set.all()
         item_count = order.get_cart_items
     else:
-        cookie_data = cookie_cart(request)
+        cookie_data = get_cookie_cart(request)
         items = cookie_data['items']
         item_count = cookie_data['itemCount']
         order = cookie_data['order']
@@ -54,11 +54,11 @@ def cart_data(request):
     return {'item_count': item_count, 'order': order, 'items': items}
 
 
-def guest_order(request, data):
+def get_guest_order(request, data):
     name = data['form']['name']
     email = data['form']['email']
 
-    cookie_data = cookie_cart(request)
+    cookie_data = get_cookie_cart(request)
     items = cookie_data['items']
 
     customer, created = Customer.objects.get_or_create(email=email)
