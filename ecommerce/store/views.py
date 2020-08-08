@@ -4,48 +4,35 @@ import json
 from django.shortcuts import render
 from django.http import JsonResponse
 from . models import *
+from .utils import cookie_cart, cart_data, guest_order
+
+
 # Create your views here.
 
 
 def store(request):
-    if request.user.is_authenticated:
-        customer = request.user.customer
-        order, created = Order.objects.get_or_create(customer=customer, complete=False)
-        items = order.orderitem_set.all()
-        item_count = order.get_cart_items
-    else:
-        items = []
-        order = {'get_cart_total': 0, 'get_cart_items': 0, 'shipping': False}
-        item_count = order['get_cart_items']
+    data = cart_data(request)
+    item_count = data['item_count']
     products = Product.objects.all()
     context = {'products': products, 'itemCount': item_count}
     return render(request, 'store/store.html', context)
 
 
 def cart(request):
-    if request.user.is_authenticated:
-        customer = request.user.customer
-        order, created = Order.objects.get_or_create(customer=customer, complete=False)
-        items = order.orderitem_set.all()
-        item_count = order.get_cart_items
-    else:
-        items = []
-        order = {'get_cart_total': 0, 'get_cart_items': 0, 'shipping': False}
-        item_count = order['get_cart_items']
+    data = cart_data(request)
+    items = data['items']
+    order = data['order']
+    item_count = data['item_count']
+
     context = {'items': items, 'order': order, 'itemCount': item_count}
     return render(request, 'store/cart.html', context)
 
 
 def checkout(request):
-    if request.user.is_authenticated:
-        customer = request.user.customer
-        order, created = Order.objects.get_or_create(customer=customer, complete=False)
-        items = order.orderitem_set.all()
-        item_count = order.get_cart_items
-    else:
-        items = []
-        order = {'get_cart_total': 0, 'get_cart_items': 0, 'shipping': False}
-        item_count = order['get_cart_items']
+    data = cart_data(request)
+    items = data['items']
+    order = data['order']
+    item_count = data['item_count']
     context = {'items': items, 'order': order, 'itemCount': item_count}
     return render(request, 'store/checkout.html', context)
 
@@ -79,22 +66,23 @@ def process_order(request):
     if request.user.is_authenticated:
         customer = request.user.customer
         order, created = Order.objects.get_or_create(customer=customer, complete=False)
-        total = float(data['form']['total'])
-        order.transaction_id = transaction_id
-        if total == order.get_cart_total:
-            order.complete = True
-        order.save()
 
-        if order.shipping:
-            ShippingAddress.objects.create(
-                customer=customer,
-                order=order,
-                address=data['shipping']['address'],
-                city=data['shipping']['city'],
-                state=data['shipping']['state'],
-                zip_code=data['shipping']['zipcode']
-
-            )
     else:
-        print('User not logged in')
+        order, customer = guest_order(request, data)
+    total = float(data['form']['total'])
+    order.transaction_id = transaction_id
+    if total == order.get_cart_total:
+        order.complete = True
+    order.save()
+
+    if order.shipping:
+        ShippingAddress.objects.create(
+            customer=customer,
+            order=order,
+            address=data['shipping']['address'],
+            city=data['shipping']['city'],
+            state=data['shipping']['state'],
+            zip_code=data['shipping']['zipcode']
+
+        )
     return JsonResponse('Payment complete', safe=False)
